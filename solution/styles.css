@@ -21,6 +21,7 @@ body {
     --text-color: #333333;
 
     --primary-color: #68f;
+    --primary-color-alt: #acf;
     --font-family: 'Quicksand', sans-serif;
     --icon: "☀";
 
@@ -113,14 +114,15 @@ header > div > div:first-child {
 main {
     width: 100%;
 }
-main > section {
+.lists-section {
     display: flex;
     flex-wrap: wrap;
     gap: 1em;
     margin: 0 auto;
     padding: 1em;
+    max-width: 1200px;
 }
-main > section > section {
+.lists-section > section {
     display: flex;
     flex-direction: column;
     flex: 1 1 12em;
@@ -150,7 +152,8 @@ main > section > section {
 
 .task {
     border: var(--border);
-    background: white;
+    background: var(--primary-color);
+    color: #eee;
     padding: 0.5em;
     margin: 0.5em 0;
 }
