@@ -12,32 +12,54 @@ function applyTheme(theme) {
 this function handle the add task event
 */
 function handleAddTask(e) {
+    if(e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") return;
 
-    if(e.target.tagName === "BUTTON") {
-        const addButton = e.target;
-        const taskInput = addButton.previousElementSibling;
-        const ul = addButton.parentElement.previousElementSibling
+    let taskInput;
+    let ul;
 
-        let listJson = localStorage.getItem(ul.className);
-        const listArr = JSON.parse(listJson) || [];
-        
-        const taskObj = {
-            id: generateId(listArr),
-            task: taskInput.value,
-            date: new Date().toLocaleString(),
+    if(e.target.tagName === "INPUT") {
+        if(e.key !== "Enter") return;
+        taskInput = e.target;
+        ul = e.target.parentElement.previousElementSibling
+    }
+    else if(e.target.tagName === "BUTTON") {
+        taskInput = e.target.previousElementSibling;
+        ul = e.target.parentElement.previousElementSibling;
+    }
+    const dataType = taskInput.closest("section").dataset.type;
+
+    if(!taskInput.value) {
+        alert("Invalid input!");
+        return;
+    }
+    
+    let allTasksObj = {};
+    let listArr = [];
+    if(localStorage.getItem("tasks")) {
+        const tasksJson = localStorage.getItem("tasks");
+        allTasksObj = JSON.parse(tasksJson);
+        if(allTasksObj.hasOwnProperty(dataType)) {
+            listArr =  allTasksObj[dataType];
         }
-
-        listArr.unshift(taskObj);
-
-        console.log(JSON.stringify(listArr));
-
-        localStorage.setItem(ul.className, JSON.stringify(listArr));
-
-        const li = createElement("li", [taskInput.value], ["task"], {});
-        ul.append(li);
-        taskInput.value = "";
     }
 
+    // const taskObj = {
+    //     id: generateId(listArr),
+    //     task: taskInput.value,
+    //     date: new Date().toLocaleString(),
+    // }
+
+    // listArr.push(taskObj);
+    listArr.push(taskInput.value);
+
+    allTasksObj[dataType] = listArr;
+
+
+    localStorage.setItem("tasks", JSON.stringify(allTasksObj));
+
+    const li = createElement("li", [taskInput.value], ["task"], {});
+    ul.prepend(li);
+    taskInput.value = "";
 }
 
 
@@ -85,10 +107,11 @@ this function display the tasks lists to DOM
 */
 function generateLists() {
     const ulLists = document.querySelectorAll("ul");
-    console.log(ulLists);
     for(const list of ulLists) {
-        const tasksList = JSON.parse(localStorage.getItem(list.className));
-        if(tasksList) {
+        const dataType = list.closest("section").dataset.type;
+        if(localStorage.getItem("tasks")) {
+            const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
+            const tasksList = allTasksObj[dataType];
             sortListByDate(tasksList);
             for(const task of tasksList) {
                 const li = createElement("li", [task.task], ["task"], {});
@@ -127,6 +150,9 @@ page structure
           });
     });
     
+    const inputTasksElements = document.querySelectorAll(".add-task > input");
+    for(const input of inputTasksElements) input.addEventListener("keypress", handleAddTask);
+
     const listsSection = document.getElementById("lists");
     listsSection.addEventListener("click", handleAddTask);
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0; url=https://shaharkamay.github.io/solution/index.html">
+    <!-- <meta http-equiv="refresh" content="0; url=https://shaharkamay.github.io/solution/index.html"> -->
     <script src="./index.js" defer></script>
     <link rel="stylesheet" href="./styles.css" />
     <title>Tasks manager</title>
@@ -16,7 +16,7 @@
                 <h1 id="page-title">Tasks manager</h1>
             </div>
             <div id="search-section">
-                <input id="search" type="search" placeholder="Search...">
+                <input id="search" type="search" placeholder="Search..." disabled>
                 <button id="search-button">🔎︎</button>
             </div>
             <div class="select">
@@ -31,7 +31,7 @@
     </header>
     <main>
         <section id="lists" class="lists-section">
-            <section id="to-do-section">
+            <section id="to-do-section" data-type="todo">
                 <h2>To Do List</h2>
                 <ul class="to-do-tasks">
                     <!-- <li class="task">clean the sink</li>
@@ -39,10 +39,10 @@
                 </ul>
                 <div class="add-task">
                     <input id="add-to-do-task" type="text" placeholder="Insert task">
-                    <button id="submit-add-to-do">Add</button>
+                    <button id="submit-add-to-do" type="submit">Add</button>
                 </div>
             </section>
-            <section id="in-progress-section">
+            <section id="in-progress-section" data-type="in-progress">
                 <h2>In Progress List</h2>
                 <ul class="in-progress-tasks">
                     <!-- <li class="task">make eggs</li>
@@ -51,17 +51,17 @@
                 </ul>
                 <div class="add-task">
                     <input id="add-in-progress-task" type="text" placeholder="Insert task">
-                    <button id="submit-add-in-progress">Add</button>
+                    <button id="submit-add-in-progress" type="submit">Add</button>
                 </div>
             </section>
-            <section id="done-section">
+            <section id="done-section" data-type="done">
                 <h2>Done List</h2>
                 <ul class="done-tasks">
                     <!-- <li class="task">visit grandma</li> -->
                 </ul>
                 <div class="add-task">
                     <input id="add-done-task" type="text" placeholder="Insert task">
-                    <button id="submit-add-done">Add</button>
+                    <button id="submit-add-done" type="submit">Add</button>
                 </div>
             </section>
         </section>
