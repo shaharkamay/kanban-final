@@ -59,6 +59,15 @@ function handleEditTask(e) {
     }
 }
 
+function blurEventHandler(e) {
+    if(e.target.tagName === "LI") {
+        const liTask = e.target;
+        liTask.contentEditable = true;
+        const listType = liTask.closest("section").dataset.listType;
+        updateTask(liTask.textContent, liTask.dataset.task, listType);
+    }
+}
+
 
 /*
 this function handles the task movements between lists
@@ -67,7 +76,7 @@ function handleMoveTask(e) {
     const mouseOverElements = document.querySelectorAll(":hover");
     const liMouseOn = mouseOverElements[mouseOverElements.length - 1];
     
-    if(liMouseOn.tagName !== "LI" || e.key !== 'Alt') return;
+    if(!liMouseOn || liMouseOn.tagName !== "LI" || e.key !== 'Alt') return;
 
     altKeyDownEventHandler(e);
 }
@@ -115,6 +124,15 @@ function numberKeyDownEventHandler(e) {
     if(newListType !== null) moveTask(task, previousListType, newListType);
 }
 
+
+function searchEventHandler(e) {
+    if(document.activeElement.id !== "search") return;
+    const searchInput = document.activeElement;
+    
+    let query = searchInput.value;
+
+    filterLists(query.toLowerCase());
+}
 
 /**
  * Creates a new DOM element.
@@ -182,6 +200,9 @@ function generateLists() {
             list.append(li);
         }
     }
+
+    const liTasks = document.querySelectorAll(".task");
+    for(const li of liTasks) li.addEventListener("blur", blurEventHandler);
 }
 
 /*
@@ -216,15 +237,20 @@ page structure
     });
 
     const inputTasksElements = document.querySelectorAll(".add-task > input");
-    for(const input of inputTasksElements) input.addEventListener("keypress", handleAddTask);
+    for(const input of inputTasksElements) input.addEventListener("keyup", handleAddTask);
 
+    
+    
     const ulLists = document.querySelectorAll("ul");
     
     const listsSection = document.getElementById("lists");
     listsSection.addEventListener("click", handleAddTask);
-    listsSection.addEventListener("dblclick", handleEditTask)
-    document.addEventListener("keypress", handleEditTask)
+    listsSection.addEventListener("dblclick", handleEditTask);
+    listsSection.addEventListener("keydown", handleEditTask);
+    // listsSection.addEventListener("blur", blurEventHandler);
+    
     document.addEventListener("keydown", handleMoveTask);
+    document.addEventListener("keyup", searchEventHandler);
 
     generateLists();
 
@@ -278,4 +304,14 @@ function moveTask(task, previousListType, newListType) {
     addTask(task, newListType);
 
     generateLists();
+}
+
+function filterLists(query) {
+    const allLiTasks = document.querySelectorAll('.task');
+
+    for(const liTask of allLiTasks) {
+        const task = liTask.textContent.toLowerCase();
+        
+        liTask.style.display = task.search(new RegExp(query.replace(/\s+/, '|'))) !== -1 ? '' : "none";
+    }
 }
