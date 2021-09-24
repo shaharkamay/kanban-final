@@ -25,8 +25,6 @@ page structure
     const inputTasksElements = document.querySelectorAll(".add-task > input");
     for(const input of inputTasksElements) input.addEventListener("keyup", handleAddTask);
     
-    
-    
     const ulLists = document.querySelectorAll("ul");
     
     const listsSection = document.getElementById("lists");
@@ -38,10 +36,14 @@ page structure
     apiSection.addEventListener("click", clickEventHandlerApi);
     
     document.addEventListener("keydown", handleMoveTask);
+    
     document.addEventListener("keyup", searchEventHandler);
     
+    const listSections = listsSection.querySelectorAll("section");
+    listSections.forEach(listSection => {
+        listSection.addEventListener("dragover", (e) => e.preventDefault());
+    });
     generateLists();
-    
     
 })();
 
@@ -62,13 +64,20 @@ function generateLists() {
         const tasksList = allTasksObj[listType];
         // sortListByDate(tasksList);
         for(const task of tasksList) {
-            const li = createElement("li", [task], ["task"], {"data-task": task});
+            const li = createElement("li", [task], ["task"], {"data-task": task, draggable: "true"});
             list.append(li);
         }
     }
     
     const liTasks = document.querySelectorAll(".task");
-    for(const li of liTasks) li.addEventListener("blur", blurEventHandler);
+    for(const li of liTasks) {
+        li.addEventListener("blur", blurEventHandler);
+        li.addEventListener("dragstart", () => li.classList.add("dragging"));
+        li.addEventListener("dragend", (e) => {
+            li.classList.remove("dragging");
+            dragendEventHandler(e);
+        });
+    }
 }
 
 function filterLists(query) {
@@ -104,6 +113,16 @@ function createElement(tagName, children = [], classes = [], attributes = {}) {
         element.setAttribute(attr, attributes[attr]);
     }
     return element;
+}
+
+function getDragIndexTaskDOM(y, listBounds, taskBounds) {
+    const taskHeight = 36;
+    const height = listBounds.height;
+    const taskPosition = height - (y - listBounds.top);
+
+    const index = Math.round((height - taskPosition) / taskHeight);
+    
+    return index;
 }
 
 
@@ -146,9 +165,9 @@ function handleAddTask(e) {
     
     addTask(taskInput.value, listType);
     
-    const li = createElement("li", [taskInput.value], ["task"], {"data-task": taskInput.value});
-    ul.prepend(li);
     taskInput.value = "";
+
+    generateLists();
 }
 
 /*
@@ -176,7 +195,7 @@ element loses focusthe change will be saved.
 function blurEventHandler(e) {
     if(e.target.tagName === "LI") {
         const liTask = e.target;
-        liTask.contentEditable = true;
+        liTask.contentEditable = false;
         const listType = liTask.closest("section").dataset.listType;
         updateTask(liTask.textContent, liTask.dataset.task, listType);
     }
@@ -209,7 +228,7 @@ function altKeyUpEventHandler(e) {
     }
 }
 function numberKeyDownEventHandler(e) {
-    const keyPressed = e.key
+    const keyPressed = e.key;
 
     const mouseOverElements = document.querySelectorAll(":hover");
     const liMouseOn = mouseOverElements[mouseOverElements.length - 1];
@@ -265,6 +284,29 @@ async function clickEventHandlerApi(e) {
     }
 }
 
+function dragendEventHandler(e) {
+    const hoverElements =  document.querySelectorAll(":hover");
+    const ulList = hoverElements[hoverElements.length - 1].closest("ul");
+    const listSection = hoverElements[hoverElements.length - 1].closest("section");
+    
+    if(!listSection.dataset.listType) return;
+    
+    const newListType = listSection.dataset.listType;
+    const previousListType = e.target.closest("section").dataset.listType;
+    const task = e.target.textContent;
+    let index = null;
+
+    if(ulList && ulList.children.length > 0) {
+        const taskBounds = e.target.getBoundingClientRect();
+        const listBounds = ulList.getBoundingClientRect();
+        const y = e.clientY;
+        index = getDragIndexTaskDOM(y, listBounds, taskBounds);
+    }
+    moveTask(task, previousListType, newListType, index);
+    
+
+}
+
 
 /*
 Local Storage functions
@@ -305,9 +347,16 @@ function removeTask(task, listType) {
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
 }
 
-function moveTask(task, previousListType, newListType) {
-    removeTask(task, previousListType);
-    addTask(task, newListType);
+function moveTask(task, previousListType, newListType, spliceIndex) {
+    if(!spliceIndex){
+        console.log('haha');
+        removeTask(task, previousListType);
+        addTask(task, newListType);
+    } else {
+        console.log('hehe');
+        removeTask(task, previousListType)
+        spliceTasks(task, spliceIndex, newListType);
+    }
     
     generateLists();
 }
@@ -333,6 +382,16 @@ function replaceAllTasks(tasks) {
     
 }
 
+function spliceTasks(task, startIndex, listType, deleteCount = 0) {
+    const tasksJson = localStorage.getItem("tasks");
+    const allTasksObj = JSON.parse(tasksJson);
+    const listArr =  allTasksObj[listType];
+
+    listArr.splice(startIndex, deleteCount, task);
+    allTasksObj[listType] = listArr;
+    
+    localStorage.setItem("tasks", JSON.stringify(allTasksObj));
+}
 
 /*
 API functions

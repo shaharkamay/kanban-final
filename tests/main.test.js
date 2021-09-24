@@ -61,7 +61,6 @@ const getTasksFromLocalStorage = async () => {
 const expectLoaderCount = async (c) => {
   const loaders = await page.$$(loader)
   expect(loaders.length).toBe(c)
-  console.log(c)
 }
 
 const addTasksAndTest = async (startTingIndex = 0) =>
