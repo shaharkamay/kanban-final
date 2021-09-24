@@ -20,8 +20,8 @@ body {
     --trim-color: #dddddd;
     --text-color: #333333;
 
-    --primary-color: #68f;
-    --primary-color-alt: #acf;
+    --primary-color: #006fcc;
+    --primary-color-alt: #5EB5E8;
     --font-family: 'Quicksand', sans-serif;
     --icon: "☀";
 
@@ -60,9 +60,19 @@ input {
     background-color: var(--background-color);
 }
 button {
-    border: var(--border);
+    cursor: pointer;
+    border: 1px solid var(--primary-color-alt);
+    background: var(--primary-color-alt);
     padding: 0.5em;
     border-radius: 0.2em;
+    font-weight: bolder;
+    color: var(--background-color);
+    transition: all 0.2s;
+}
+button:hover {
+    background: none;
+    color: var(--text-color);
+    transition: all 0.2s;
 }
 header {
     position: sticky;

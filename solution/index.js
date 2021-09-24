@@ -174,7 +174,12 @@ function handleAddTask(e) {
         return;
     }
     
-    addTask(taskInput.value, listType);
+    const task = {
+        task: taskInput.value,
+        date: new Date().toLocaleString("en-gb"),
+    }
+
+    addTask(task, listType);
     
     taskInput.value = "";
 
@@ -193,8 +198,18 @@ function handleEditTask(e) {
 
     const listType = liTask.closest("section").dataset.listType;
 
+    const newTask = {
+        task: liTask.textContent,
+        date: new Date().toLocaleString("en-gb"),
+    }
+
+    const oldTask = {
+        task: liTask.dataset.task,
+        date: liTask.dataset.date,
+    }
+
     if(e.key === "Enter") {
-        updateTask(liTask.textContent, liTask.dataset.task, listType);
+        updateTask(newTask, oldTask, listType);
         liTask.blur();
     }
 }
@@ -208,7 +223,18 @@ function blurEventHandler(e) {
         const liTask = e.target;
         liTask.contentEditable = false;
         const listType = liTask.closest("section").dataset.listType;
-        updateTask(liTask.textContent, liTask.dataset.task, listType);
+
+        const newTask = {
+            task: liTask.textContent,
+            date: new Date().toLocaleString("en-gb"),
+        }
+    
+        const oldTask = {
+            task: liTask.dataset.task,
+            date: liTask.dataset.date,
+        }
+
+        updateTask(newTask, oldTask, listType);
     }
 }
 
@@ -218,7 +244,7 @@ this functions handles the task movements between lists
 function handleMoveTask(e) {
     const mouseOverElements = document.querySelectorAll(":hover");
     const liMouseOn = mouseOverElements[mouseOverElements.length - 1];
-    
+
     if(!liMouseOn || liMouseOn.tagName !== "LI" || e.key !== 'Alt') return;
 
     altKeyDownEventHandler(e);
@@ -246,7 +272,10 @@ function numberKeyDownEventHandler(e) {
 
     if(!liMouseOn || liMouseOn.tagName !== "LI") return;
 
-    const task = liMouseOn.textContent;
+    const task = {
+        task: liMouseOn.textContent,
+        date: liMouseOn.dataset.date,
+    }
     const previousListType = liMouseOn.closest("section").dataset.listType;
     let newListType = null;
 
@@ -301,7 +330,10 @@ function dragendEventHandler(e) {
     //delete drag task
     if(hoverElements[hoverElements.length - 1].id === "delete-drag") {
         const listType = e.target.closest("section").dataset.listType;
-        const task = e.target.textContent;
+        const task = {
+            task: e.target.textContent,
+            date: e.target.dataset.date,
+        }
         removeTask(task, listType);
         generateLists();
     }
@@ -313,7 +345,10 @@ function dragendEventHandler(e) {
     
     const newListType = listSection.dataset.listType;
     const previousListType = e.target.closest("section").dataset.listType;
-    const task = e.target.textContent;
+    const task = {
+        task: e.target.textContent,
+        date: liMouseOn.dataset.date,
+    }
     let index = null;
 
     if(ulList && ulList.children.length > 0) {
@@ -323,8 +358,6 @@ function dragendEventHandler(e) {
         index = getDragIndexTaskDOM(y, listBounds, taskBounds);
     }
     moveTask(task, previousListType, newListType, index);
-    
-
 }
 
 function clickInfoEventHandler(e) {
@@ -333,42 +366,48 @@ function clickInfoEventHandler(e) {
 
 
 /*
-Local Storage functions
+Local Storage functions (task is an object)
 */
 function addTask(task, listType) {
-    const tasksJson = localStorage.getItem("tasks");
-    const allTasksObj = JSON.parse(tasksJson);
-    const listArr =  allTasksObj[listType];
-    
-    listArr.unshift(task);
-    allTasksObj[listType] = listArr;
-    
+    // const task = {
+    //     text: "",
+    //     date: new Date().toLocaleString("en-gb"),
+    //     reminder: new Date()
+    // };
+    const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
+    allTasksObj[listType].unshift(task.task);
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
+
+    const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
+    allObjectsTasks[listType].unshift(task);
+    localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
 }
 
 function updateTask(newTask, oldTask, listType) {
-    const tasksJson = localStorage.getItem("tasks");
-    const allTasksObj = JSON.parse(tasksJson);
-    const listArr =  allTasksObj[listType];
-    
-    const i = listArr.findIndex(x => x === oldTask);
-    listArr[i] = newTask;
-    allTasksObj[listType] = listArr;
-    
+    const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
+    const i = allTasksObj[listType].findIndex(x => x === oldTask.task);
+    allTasksObj[listType][i] = newTask.task;
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
+
+    const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
+    // const j = allObjectsTasks[listType].findIndex(x => x.task === oldTask.task && x.date === oldTask.date);
+    const j = allObjectsTasks[listType].findIndex(x => x.task === oldTask.task);
+    allObjectsTasks[listType][j] = newTask;
+    localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
 }
 
 function removeTask(task, listType) {
-    const tasksJson = localStorage.getItem("tasks");
-    const allTasksObj = JSON.parse(tasksJson);
-    const listArr =  allTasksObj[listType];
-    
-    const i = listArr.findIndex(x => x === task);
-    listArr.splice(i, 1);
-    
-    allTasksObj[listType] = listArr;
-    
+    const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
+    const i = allTasksObj[listType].findIndex(x => x === task.task);
+    allTasksObj[listType].splice(i, 1);
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
+
+    const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
+    // const j = allObjectsTasks[listType].findIndex(x => x.task === task.task && x.date === task.date);
+    const j = allObjectsTasks[listType].findIndex(x => x.task === task.task);
+    allObjectsTasks[listType].splice(j, 1);
+    localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
+
 }
 
 function moveTask(task, previousListType, newListType, spliceIndex) {
@@ -384,35 +423,52 @@ function moveTask(task, previousListType, newListType, spliceIndex) {
 }
 
 function setLocalStorage() {
+    const setTasks = {
+        "todo": [],
+        "in-progress": [],
+        "done": [],
+    }
     if(!localStorage.getItem("tasks")) {
-        const setObjTasks = {
-            "todo": [],
-            "in-progress": [],
-            "done": [],
-        }
-        localStorage.setItem("tasks", JSON.stringify(setObjTasks));
+        localStorage.setItem("tasks", JSON.stringify(setTasks));
+    }
+    if(!localStorage.getItem("tasksObjects")) {
+        localStorage.setItem("tasksObjects", JSON.stringify(setTasks));
     }
 }
 
 function removeAllTasks(){
     localStorage.removeItem("tasks");
+    localStorage.removeItem("tasksObjects");
 }
 
 function replaceAllTasks(tasks) {
     removeAllTasks();
+    // const todo = [];
+    // const inProgress = [];
+    // const done = [];
+
+    // for(const task of tasks["todo"]) todo.push(task.task);
+    // for(const task of tasks["in-progress"]) inProgress.push(task.task)
+    // for(const task of tasks["done"]) done.push(task.task);
+
+    // const tasksStrings = {
+    //     "todo": todo,
+    //     "in-progress": inProgress,
+    //     "done": done,
+    // }
+    // localStorage.setItem("tasks", JSON.stringify(tasksStrings));
+    // localStorage.setItem("tasksObjects", JSON.stringify(tasks));
     localStorage.setItem("tasks", JSON.stringify(tasks));
-    
 }
 
 function spliceTasks(task, startIndex, listType, deleteCount = 0) {
-    const tasksJson = localStorage.getItem("tasks");
-    const allTasksObj = JSON.parse(tasksJson);
-    const listArr =  allTasksObj[listType];
-
-    listArr.splice(startIndex, deleteCount, task);
-    allTasksObj[listType] = listArr;
-    
+    const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
+    allTasksObj[listType].splice(startIndex, deleteCount, task.task);
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
+
+    const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
+    allObjectsTasks[listType].splice(startIndex, deleteCount, task);
+    localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
 }
 
 /*
@@ -427,7 +483,7 @@ async function saveTasksToApi(tasks) {
             Accept: "application/json",
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({tasks}),
+        body: JSON.stringify({tasks}), 
     });
     if(!response.ok) alert(`error status! ${response.status}`);
 
