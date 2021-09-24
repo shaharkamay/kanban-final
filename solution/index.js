@@ -43,6 +43,10 @@ page structure
     listSections.forEach(listSection => {
         listSection.addEventListener("dragover", (e) => e.preventDefault());
     });
+
+    const deleteDrag = document.getElementById("delete-drag");
+    deleteDrag.addEventListener("dragover", (e) => e.preventDefault());
+
     generateLists();
     
 })();
@@ -65,16 +69,23 @@ function generateLists() {
         // sortListByDate(tasksList);
         for(const task of tasksList) {
             const li = createElement("li", [task], ["task"], {"data-task": task, draggable: "true"});
+            const span = createElement("span", ["🛈"], ["info"], {});
+            span.addEventListener("click", clickInfoEventHandler);
             list.append(li);
+            list.append(span);
         }
     }
     
     const liTasks = document.querySelectorAll(".task");
     for(const li of liTasks) {
         li.addEventListener("blur", blurEventHandler);
-        li.addEventListener("dragstart", () => li.classList.add("dragging"));
+        li.addEventListener("dragstart", () => {
+            li.classList.add("dragging");
+            document.getElementById("delete-drag").classList.add("red-bg-color");
+        });
         li.addEventListener("dragend", (e) => {
             li.classList.remove("dragging");
+            document.getElementById("delete-drag").classList.remove("red-bg-color");
             dragendEventHandler(e);
         });
     }
@@ -286,6 +297,15 @@ async function clickEventHandlerApi(e) {
 
 function dragendEventHandler(e) {
     const hoverElements =  document.querySelectorAll(":hover");
+
+    //delete drag task
+    if(hoverElements[hoverElements.length - 1].id === "delete-drag") {
+        const listType = e.target.closest("section").dataset.listType;
+        const task = e.target.textContent;
+        removeTask(task, listType);
+        generateLists();
+    }
+
     const ulList = hoverElements[hoverElements.length - 1].closest("ul");
     const listSection = hoverElements[hoverElements.length - 1].closest("section");
     
@@ -305,6 +325,10 @@ function dragendEventHandler(e) {
     moveTask(task, previousListType, newListType, index);
     
 
+}
+
+function clickInfoEventHandler(e) {
+    //info code here
 }
 
 
@@ -349,11 +373,9 @@ function removeTask(task, listType) {
 
 function moveTask(task, previousListType, newListType, spliceIndex) {
     if(!spliceIndex){
-        console.log('haha');
         removeTask(task, previousListType);
         addTask(task, newListType);
     } else {
-        console.log('hehe');
         removeTask(task, previousListType)
         spliceTasks(task, spliceIndex, newListType);
     }
