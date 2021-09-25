@@ -240,7 +240,7 @@ function editTaskEventHandler(e) {
 
     const newTask = {
         task: liTask.textContent,
-        date: new Date().toLocaleString("en-gb"),
+        date: new Date().toLocaleString(),
         reminder: liTask.dataset.reminder,
     }
 
@@ -252,9 +252,7 @@ function editTaskEventHandler(e) {
 
     if(e.key === "Enter") {
         updateTask(newTask, oldTask, listType);
-        liTask.blur();
-        liTask.draggable = true;
-        liTask.classList.remove("text-cursor");
+        generateLists()
     }
 }
 
@@ -270,7 +268,7 @@ function blurEventHandler(e) {
 
         const newTask = {
             task: liTask.textContent,
-            date: new Date().toLocaleString("en-gb"),
+            date: new Date().toLocaleString(),
             reminder: liTask.dataset.reminder,
         }
     
@@ -279,8 +277,10 @@ function blurEventHandler(e) {
             date: liTask.dataset.date,
             reminder: liTask.dataset.reminder,
         }
-
+        
         updateTask(newTask, oldTask, listType);
+
+        generateLists();
     }
 }
 
@@ -294,9 +294,6 @@ function keydownMoveTaskEventHandler(e) {
     altKeyDownEventHandler(e);
 }
 function altKeyDownEventHandler(e) {
-    const mouseOverElements = document.querySelectorAll(":hover");
-    const liMouseOn = mouseOverElements[mouseOverElements.length - 1];
-    
     document.addEventListener("keydown", numberKeyDownEventHandler);
     document.addEventListener("keyup", altKeyUpEventHandler);
 }
@@ -463,13 +460,12 @@ function removeTask(task, listType) {
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
 
     const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
-    const j = allObjectsTasks[listType].findIndex(x => x.task === task.task && x.date === task.date);
+    const j = allObjectsTasks[listType].findIndex(x => x.task === task.task);
     allObjectsTasks[listType].splice(j, 1);
     localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
-
 }
 
-function moveTask(task, previousListType, newListType, spliceIndex) {
+function moveTask(task, previousListType, newListType, spliceIndex = null) {
     if(!spliceIndex){
         removeTask(task, previousListType);
         addTask(task, newListType);
