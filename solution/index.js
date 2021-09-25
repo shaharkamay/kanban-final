@@ -47,6 +47,15 @@ page structure
     const deleteDrag = document.getElementById("delete-drag");
     deleteDrag.addEventListener("dragover", (e) => e.preventDefault());
 
+    const reminderInputs = document.querySelectorAll("[placeholder='Add reminder']");
+    for(const input of reminderInputs) {
+        input.addEventListener("focus", (e) => { 
+            e.target.type = "datetime-local" 
+            e.target.min = new Date().toISOString().split(".")[0];
+        });
+        input.addEventListener("blur", (e) => { if(!e.target.value) e.target.type = "text" });
+    }
+
     generateLists();
     
 })();
@@ -64,31 +73,42 @@ function generateLists() {
     for(const list of ulLists) {
         while(list.firstChild) list.removeChild(list.firstChild);
         const listType = list.closest("section").dataset.listType;
-        const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
-        const tasksList = allTasksObj[listType];
+        const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
+        const tasksList = allObjectsTasks[listType];
         // sortListByDate(tasksList);
         for(const task of tasksList) {
-            const li = createElement("li", [task], ["task"], {"data-task": task, draggable: "true"});
-            const span = createElement("span", ["🛈"], ["info"], {});
-            span.addEventListener("click", clickInfoEventHandler);
+            const li = createElement("li", [task.task], ["task"], {
+                "data-task": task.task, 
+                "data-date": task.date, 
+                "data-reminder": task.reminder,
+                draggable: "true",
+            });
+            addEventsToTasks(li);
+            const span = createElement("span", ["🛈"], ["info-icon"], {});
+            span.addEventListener("mouseover", mouseoverInfoEventHandler);
+            span.addEventListener("mouseout", mouseoutInfoEventHandler);
             list.append(li);
             list.append(span);
         }
     }
-    
-    const liTasks = document.querySelectorAll(".task");
-    for(const li of liTasks) {
-        li.addEventListener("blur", blurEventHandler);
-        li.addEventListener("dragstart", () => {
-            li.classList.add("dragging");
-            document.getElementById("delete-drag").classList.add("red-bg-color");
-        });
-        li.addEventListener("dragend", (e) => {
-            li.classList.remove("dragging");
-            document.getElementById("delete-drag").classList.remove("red-bg-color");
-            dragendEventHandler(e);
-        });
-    }
+}
+
+/*
+this function sets event handlers to the tasks elements
+*/
+function addEventsToTasks(taskElem) {
+    taskElem.addEventListener("blur", blurEventHandler);
+
+    taskElem.addEventListener("dragstart", () => {
+        taskElem.classList.add("dragging");
+        document.getElementById("delete-drag").classList.add("red-bg-color");
+    });
+
+    taskElem.addEventListener("dragend", (e) => {
+        taskElem.classList.remove("dragging");
+        document.getElementById("delete-drag").classList.remove("red-bg-color");
+        dragendEventHandler(e);
+    });
 }
 
 function filterLists(query) {
@@ -97,7 +117,15 @@ function filterLists(query) {
     for(const liTask of allLiTasks) {
         const task = liTask.textContent.toLowerCase();
         
-        liTask.style.display = task.search(new RegExp(query.replace(/\s+/, '|'))) !== -1 ? '' : "none";
+        const infoSpan = liTask.nextElementSibling;
+
+        if(task.search(new RegExp(query.replace(/\s+/, '|'))) !== -1) {
+            liTask.style.display = '';
+            infoSpan.style.display = '';
+        } else {
+            liTask.style.display = "none";
+            infoSpan.style.display = "none";
+        }
     }
 }
 
@@ -153,18 +181,21 @@ function applyTheme(theme) {
 this function handle the add task event
 */
 function handleAddTask(e) {
-    if(e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") return;
+    if(e.target.placeholder !== "Insert task" && e.target.tagName !== "BUTTON") return;
 
     let taskInput;
+    let reminderInput;
     let ul;
 
-    if(e.target.tagName === "INPUT") {
+    if(e.target.placeholder === "Insert task") {
         if(e.key !== "Enter") return;
+        reminderInput = e.target.nextElementSibling;
         taskInput = e.target;
         ul = e.target.parentElement.previousElementSibling
     }
     else if(e.target.tagName === "BUTTON") {
-        taskInput = e.target.previousElementSibling;
+        reminderInput = e.target.previousElementSibling;
+        taskInput = e.target.previousElementSibling.previousElementSibling;
         ul = e.target.parentElement.previousElementSibling;
     }
     const listType = taskInput.closest("section").dataset.listType;
@@ -173,10 +204,18 @@ function handleAddTask(e) {
         alert("Invalid input!");
         return;
     }
-    
+
     const task = {
         task: taskInput.value,
-        date: new Date().toLocaleString("en-gb"),
+        date: new Date().toLocaleString(),
+        reminder: new Date(reminderInput.value).toLocaleString(),
+    }
+
+    const reminderInMilliseconds = (new Date(task.reminder).getTime() - new Date(task.date).getTime());
+    if(reminderInMilliseconds) {
+        setTimeout(() => {
+            alert(`Reminder from "${listType}" list:\n"${task.task}"`);
+        }, reminderInMilliseconds);
     }
 
     addTask(task, listType);
@@ -201,11 +240,13 @@ function handleEditTask(e) {
     const newTask = {
         task: liTask.textContent,
         date: new Date().toLocaleString("en-gb"),
+        reminder: liTask.dataset.reminder,
     }
 
     const oldTask = {
         task: liTask.dataset.task,
         date: liTask.dataset.date,
+        reminder: liTask.dataset.reminder,
     }
 
     if(e.key === "Enter") {
@@ -227,11 +268,13 @@ function blurEventHandler(e) {
         const newTask = {
             task: liTask.textContent,
             date: new Date().toLocaleString("en-gb"),
+            reminder: liTask.dataset.reminder,
         }
     
         const oldTask = {
             task: liTask.dataset.task,
             date: liTask.dataset.date,
+            reminder: liTask.dataset.reminder,
         }
 
         updateTask(newTask, oldTask, listType);
@@ -275,6 +318,7 @@ function numberKeyDownEventHandler(e) {
     const task = {
         task: liMouseOn.textContent,
         date: liMouseOn.dataset.date,
+        reminder: liMouseOn.dataset.reminder,
     }
     const previousListType = liMouseOn.closest("section").dataset.listType;
     let newListType = null;
@@ -315,8 +359,8 @@ and save data to the API or load data from the API
 async function clickEventHandlerApi(e) {
     if(e.target.id === "save-btn") {
         //save to api
-        const tasks = JSON.parse(localStorage.getItem("tasks"));
-        saveTasksToApi(tasks);
+        const tasksObjects = JSON.parse(localStorage.getItem("tasksObjects"));
+        saveTasksToApi(tasksObjects);
     } else if(e.target.id === "load-btn") {
         //load from api
         await loadTasksFromApi();
@@ -333,6 +377,7 @@ function dragendEventHandler(e) {
         const task = {
             task: e.target.textContent,
             date: e.target.dataset.date,
+            reminder: e.target.dataset.reminder,
         }
         removeTask(task, listType);
         generateLists();
@@ -347,7 +392,8 @@ function dragendEventHandler(e) {
     const previousListType = e.target.closest("section").dataset.listType;
     const task = {
         task: e.target.textContent,
-        date: liMouseOn.dataset.date,
+        date: e.target.dataset.date,
+        reminder: e.target.dataset.reminder,
     }
     let index = null;
 
@@ -360,8 +406,33 @@ function dragendEventHandler(e) {
     moveTask(task, previousListType, newListType, index);
 }
 
-function clickInfoEventHandler(e) {
-    //info code here
+function mouseoverInfoEventHandler(e) {
+    const infoDiv = document.querySelector(".info-div");
+    infoDiv.classList.remove("display-none");
+
+    const task = e.target.previousElementSibling.dataset.task;
+    let date = e.target.previousElementSibling.dataset.date;
+    date = date.split(", ");
+    const reminderDate = e.target.previousElementSibling.dataset.reminder;
+
+    const liTaskText = createElement("li", [`Task: ${task}`], [], {});
+    const liTaskDate = createElement("li", [`Date: ${date[0]}`], [], {});
+    const liTaskTime = createElement("li", [`Time: ${date[1]}`], [], {});
+    const liTaskReminder = createElement("li", [`Reminder: ${reminderDate}`], [], {});
+    const ulTask = createElement("ul", [liTaskText, liTaskDate, liTaskTime, liTaskReminder], [], {});
+    infoDiv.append(ulTask);
+
+    const left = e.pageX;
+    const top = e.pageY;
+    const divHeight = infoDiv.offsetHeight;
+    infoDiv.style.left = left + "px";
+    infoDiv.style.top = top - (divHeight / 2) - 15 + "px";
+}
+
+function mouseoutInfoEventHandler(e) {
+    const infoDiv = document.querySelector(".info-div");
+    infoDiv.classList.add("display-none");
+    while(infoDiv.firstChild) infoDiv.removeChild(infoDiv.firstChild);
 }
 
 
@@ -369,11 +440,6 @@ function clickInfoEventHandler(e) {
 Local Storage functions (task is an object)
 */
 function addTask(task, listType) {
-    // const task = {
-    //     text: "",
-    //     date: new Date().toLocaleString("en-gb"),
-    //     reminder: new Date()
-    // };
     const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
     allTasksObj[listType].unshift(task.task);
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
@@ -390,8 +456,7 @@ function updateTask(newTask, oldTask, listType) {
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
 
     const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
-    // const j = allObjectsTasks[listType].findIndex(x => x.task === oldTask.task && x.date === oldTask.date);
-    const j = allObjectsTasks[listType].findIndex(x => x.task === oldTask.task);
+    const j = allObjectsTasks[listType].findIndex(x => x.task === oldTask.task && x.date === oldTask.date);
     allObjectsTasks[listType][j] = newTask;
     localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
 }
@@ -403,8 +468,7 @@ function removeTask(task, listType) {
     localStorage.setItem("tasks", JSON.stringify(allTasksObj));
 
     const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
-    // const j = allObjectsTasks[listType].findIndex(x => x.task === task.task && x.date === task.date);
-    const j = allObjectsTasks[listType].findIndex(x => x.task === task.task);
+    const j = allObjectsTasks[listType].findIndex(x => x.task === task.task && x.date === task.date);
     allObjectsTasks[listType].splice(j, 1);
     localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
 
@@ -443,22 +507,21 @@ function removeAllTasks(){
 
 function replaceAllTasks(tasks) {
     removeAllTasks();
-    // const todo = [];
-    // const inProgress = [];
-    // const done = [];
+    const todo = [];
+    const inProgress = [];
+    const done = [];
 
-    // for(const task of tasks["todo"]) todo.push(task.task);
-    // for(const task of tasks["in-progress"]) inProgress.push(task.task)
-    // for(const task of tasks["done"]) done.push(task.task);
+    for(const task of tasks["todo"]) todo.push(task.task);
+    for(const task of tasks["in-progress"]) inProgress.push(task.task)
+    for(const task of tasks["done"]) done.push(task.task);
 
-    // const tasksStrings = {
-    //     "todo": todo,
-    //     "in-progress": inProgress,
-    //     "done": done,
-    // }
-    // localStorage.setItem("tasks", JSON.stringify(tasksStrings));
-    // localStorage.setItem("tasksObjects", JSON.stringify(tasks));
-    localStorage.setItem("tasks", JSON.stringify(tasks));
+    const tasksStrings = {
+        "todo": todo,
+        "in-progress": inProgress,
+        "done": done,
+    }
+    localStorage.setItem("tasks", JSON.stringify(tasksStrings));
+    localStorage.setItem("tasksObjects", JSON.stringify(tasks));
 }
 
 function spliceTasks(task, startIndex, listType, deleteCount = 0) {
@@ -474,7 +537,7 @@ function spliceTasks(task, startIndex, listType, deleteCount = 0) {
 /*
 API functions
 */
-async function saveTasksToApi(tasks) {
+async function saveTasksToApi(tasksObjects) {
     loaderDisplay();
 
     const response = await fetch("https://json-bins.herokuapp.com/bin/614afa054021ac0e6c080cc3", {
@@ -483,7 +546,7 @@ async function saveTasksToApi(tasks) {
             Accept: "application/json",
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({tasks}), 
+        body: JSON.stringify({tasks: tasksObjects}), 
     });
     if(!response.ok) alert(`error status! ${response.status}`);
 
