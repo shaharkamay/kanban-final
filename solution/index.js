@@ -1,12 +1,12 @@
 "use strict";
 
 /*
-page structure
+Page structure
 */
 ( () => {
-    
     setLocalStorage();
     
+    //light/dark theme
     document.addEventListener("DOMContentLoaded", () => {
         const savedTheme = localStorage.getItem("theme") || "auto";
         
@@ -22,31 +22,36 @@ page structure
         });
     });
     
+    //event listener to add-task inputs to sense 'Enter' press
     const inputTasksElements = document.querySelectorAll(".add-task > input");
-    for(const input of inputTasksElements) input.addEventListener("keyup", handleAddTask);
+    for(const input of inputTasksElements) input.addEventListener("keyup", clickAddTaskEventHandler);
     
-    const ulLists = document.querySelectorAll("ul");
-    
+    //event listeners to the section of all lists together
     const listsSection = document.getElementById("lists");
-    listsSection.addEventListener("click", handleAddTask);
-    listsSection.addEventListener("dblclick", handleEditTask);
-    listsSection.addEventListener("keydown", handleEditTask);
+    listsSection.addEventListener("click", clickAddTaskEventHandler);
+    listsSection.addEventListener("dblclick", editTaskEventHandler);
+    listsSection.addEventListener("keydown", editTaskEventHandler);
     
+    //event listeners to the section the api section
     const apiSection = document.getElementById("api-interaction-section");
     apiSection.addEventListener("click", clickEventHandlerApi);
     
-    document.addEventListener("keydown", handleMoveTask);
+
+    document.addEventListener("keydown", keydownMoveTaskEventHandler);
     
     document.addEventListener("keyup", searchEventHandler);
     
+    //add event listener for each task-list to enable drag option
     const listSections = listsSection.querySelectorAll("section");
     listSections.forEach(listSection => {
         listSection.addEventListener("dragover", (e) => e.preventDefault());
     });
 
+    //add event listener to the 'trash' element
     const deleteDrag = document.getElementById("delete-drag");
     deleteDrag.addEventListener("dragover", (e) => e.preventDefault());
 
+    //add event listener to reminder inputs
     const reminderInputs = document.querySelectorAll("[placeholder='Add reminder']");
     for(const input of reminderInputs) {
         input.addEventListener("focus", (e) => { 
@@ -57,7 +62,6 @@ page structure
     }
 
     generateLists();
-    
 })();
 
 
@@ -65,9 +69,7 @@ page structure
 DOM functions
 */
 
-/*
-this function display the tasks lists to DOM
-*/
+//Displays the tasks lists to DOM
 function generateLists() {
     const ulLists = document.querySelectorAll("ul");
     for(const list of ulLists) {
@@ -75,7 +77,6 @@ function generateLists() {
         const listType = list.closest("section").dataset.listType;
         const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
         const tasksList = allObjectsTasks[listType];
-        // sortListByDate(tasksList);
         for(const task of tasksList) {
             const li = createElement("li", [task.task], ["task"], {
                 "data-task": task.task, 
@@ -84,7 +85,7 @@ function generateLists() {
                 draggable: "true",
             });
             addEventsToTasks(li);
-            const span = createElement("span", ["🛈"], ["info-icon"], {});
+            const span = createElement("span", ["🛈"], ["info-icon"]);
             span.addEventListener("mouseover", mouseoverInfoEventHandler);
             span.addEventListener("mouseout", mouseoutInfoEventHandler);
             list.append(li);
@@ -93,9 +94,7 @@ function generateLists() {
     }
 }
 
-/*
-this function sets event handlers to the tasks elements
-*/
+//Sets event handlers to the tasks elements
 function addEventsToTasks(taskElem) {
     taskElem.addEventListener("blur", blurEventHandler);
 
@@ -154,8 +153,7 @@ function createElement(tagName, children = [], classes = [], attributes = {}) {
     return element;
 }
 
-function getDragIndexTaskDOM(y, listBounds, taskBounds) {
-    const taskHeight = 36;
+function getDragIndexTaskDOM(y, listBounds, taskHeight = 36) {
     const height = listBounds.height;
     const taskPosition = height - (y - listBounds.top);
 
@@ -169,18 +167,14 @@ function getDragIndexTaskDOM(y, listBounds, taskBounds) {
 Event handlers
 */
 
-/*
-Light/Dark theme mode
-*/
+//Light/Dark theme mode
 function applyTheme(theme) {
     document.body.classList.remove("theme-auto", "theme-light", "theme-dark");
     document.body.classList.add(`theme-${theme}`);
 }
 
-/*
-this function handle the add task event
-*/
-function handleAddTask(e) {
+//Handles the add task event
+function clickAddTaskEventHandler(e) {
     if(e.target.placeholder !== "Insert task" && e.target.tagName !== "BUTTON") return;
 
     let taskInput;
@@ -205,14 +199,19 @@ function handleAddTask(e) {
         return;
     }
 
+    let reminder = null;
+    if(reminderInput.value) {
+        reminder = new Date(reminderInput.value).toLocaleString();
+    }
+
     const task = {
         task: taskInput.value,
         date: new Date().toLocaleString(),
-        reminder: new Date(reminderInput.value).toLocaleString(),
+        reminder: reminder,
     }
 
     const reminderInMilliseconds = (new Date(task.reminder).getTime() - new Date(task.date).getTime());
-    if(reminderInMilliseconds) {
+    if(reminder && reminderInMilliseconds > 0) {
         setTimeout(() => {
             alert(`Reminder from "${listType}" list:\n"${task.task}"`);
         }, reminderInMilliseconds);
@@ -221,18 +220,20 @@ function handleAddTask(e) {
     addTask(task, listType);
     
     taskInput.value = "";
+    reminderInput.value = "";
+    reminderInput.type = "text";
 
     generateLists();
 }
 
-/*
-this function handle the task edit
-*/
-function handleEditTask(e) {
+//Handles the task edit
+function editTaskEventHandler(e) {
     if(e.target.tagName !== "LI") return;
 
     const liTask = e.target;
     liTask.contentEditable = true;
+    liTask.draggable = false;
+    liTask.classList.add("text-cursor");
     liTask.focus();
 
     const listType = liTask.closest("section").dataset.listType;
@@ -252,17 +253,19 @@ function handleEditTask(e) {
     if(e.key === "Enter") {
         updateTask(newTask, oldTask, listType);
         liTask.blur();
+        liTask.draggable = true;
+        liTask.classList.remove("text-cursor");
     }
 }
 
-/*
-this function handles the blur event so if the task 
-element loses focusthe change will be saved.
-*/
+//Handles the blur event so if the task element loses focus, the change will be saved.
 function blurEventHandler(e) {
     if(e.target.tagName === "LI") {
         const liTask = e.target;
         liTask.contentEditable = false;
+        liTask.draggable = true;
+        liTask.classList.remove("text-cursor");
+        
         const listType = liTask.closest("section").dataset.listType;
 
         const newTask = {
@@ -281,10 +284,8 @@ function blurEventHandler(e) {
     }
 }
 
-/*
-this functions handles the task movements between lists
-*/
-function handleMoveTask(e) {
+//Handles the task movements between lists
+function keydownMoveTaskEventHandler(e) {
     const mouseOverElements = document.querySelectorAll(":hover");
     const liMouseOn = mouseOverElements[mouseOverElements.length - 1];
 
@@ -338,11 +339,7 @@ function numberKeyDownEventHandler(e) {
     if(newListType !== null) moveTask(task, previousListType, newListType);
 }
 
-/*
-this function handles the keyup event so when the
-user type a letter, the interface will change 
-appropriately.
-*/
+//Handles the keyup event so when the user types a letter, the interface will change accordingly.
 function searchEventHandler(e) {
     if(document.activeElement.id !== "search") return;
     const searchInput = document.activeElement;
@@ -352,26 +349,24 @@ function searchEventHandler(e) {
     filterLists(query.toLowerCase());
 }
 
-/*
-this function handles the save and load buttons click
-and save data to the API or load data from the API
-*/
+//Handles the save and load buttons click and save data to the API or load data from the API
 async function clickEventHandlerApi(e) {
     if(e.target.id === "save-btn") {
-        //save to api
+        //Save to api
         const tasksObjects = JSON.parse(localStorage.getItem("tasksObjects"));
         saveTasksToApi(tasksObjects);
     } else if(e.target.id === "load-btn") {
-        //load from api
+        //Load from api
         await loadTasksFromApi();
         generateLists();
     }
 }
 
+//Handles the dragend event of a task and deletes/moves the task
 function dragendEventHandler(e) {
     const hoverElements =  document.querySelectorAll(":hover");
 
-    //delete drag task
+    //Delete drag task
     if(hoverElements[hoverElements.length - 1].id === "delete-drag") {
         const listType = e.target.closest("section").dataset.listType;
         const task = {
@@ -398,14 +393,14 @@ function dragendEventHandler(e) {
     let index = null;
 
     if(ulList && ulList.children.length > 0) {
-        const taskBounds = e.target.getBoundingClientRect();
         const listBounds = ulList.getBoundingClientRect();
         const y = e.clientY;
-        index = getDragIndexTaskDOM(y, listBounds, taskBounds);
+        index = getDragIndexTaskDOM(y, listBounds);
     }
     moveTask(task, previousListType, newListType, index);
 }
 
+//Handles the mouseover event and displays a div with info of the task
 function mouseoverInfoEventHandler(e) {
     const infoDiv = document.querySelector(".info-div");
     infoDiv.classList.remove("display-none");
@@ -415,20 +410,19 @@ function mouseoverInfoEventHandler(e) {
     date = date.split(", ");
     const reminderDate = e.target.previousElementSibling.dataset.reminder;
 
-    const liTaskText = createElement("li", [`Task: ${task}`], [], {});
-    const liTaskDate = createElement("li", [`Date: ${date[0]}`], [], {});
-    const liTaskTime = createElement("li", [`Time: ${date[1]}`], [], {});
-    const liTaskReminder = createElement("li", [`Reminder: ${reminderDate}`], [], {});
-    const ulTask = createElement("ul", [liTaskText, liTaskDate, liTaskTime, liTaskReminder], [], {});
+    const liTaskText = createElement("li", [task], [], {"data-highlightword": "Task: "});
+    const liTaskDate = createElement("li", [date[0]], [], {"data-highlightword": "Date: "});
+    const liTaskTime = createElement("li", [date[1]], [], {"data-highlightword": "Time: "});
+    const liTaskReminder = createElement("li", [reminderDate], [], {"data-highlightword": "Reminder: "});
+    const ulTask = createElement("ul", [liTaskText, liTaskDate, liTaskTime, liTaskReminder]);
     infoDiv.append(ulTask);
 
     const left = e.pageX;
     const top = e.pageY;
     const divHeight = infoDiv.offsetHeight;
-    infoDiv.style.left = left + "px";
-    infoDiv.style.top = top - (divHeight / 2) - 15 + "px";
+    infoDiv.style.left = left - 100 + "px";
+    infoDiv.style.top = top - (divHeight / 2) - 20 + "px";
 }
-
 function mouseoutInfoEventHandler(e) {
     const infoDiv = document.querySelector(".info-div");
     infoDiv.classList.add("display-none");
@@ -439,6 +433,7 @@ function mouseoutInfoEventHandler(e) {
 /*
 Local Storage functions (task is an object)
 */
+
 function addTask(task, listType) {
     const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
     allTasksObj[listType].unshift(task.task);
@@ -534,9 +529,11 @@ function spliceTasks(task, startIndex, listType, deleteCount = 0) {
     localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
 }
 
+
 /*
 API functions
 */
+
 async function saveTasksToApi(tasksObjects) {
     loaderDisplay();
 
@@ -579,9 +576,7 @@ async function loadTasksFromApi() {
 Helper functions
 */
 
-/*
-loader gif display function
-*/
+//loader gif display function
 function loaderDisplay() {
     const div = document.querySelector(".api-interaction > div");
     if(div.lastElementChild.tagName === "IMG") {
@@ -592,24 +587,3 @@ function loaderDisplay() {
     }
 }
 
-/*
-this function generates ID to a list
-*/
-// function generateId(arr) {
-//     let max = 0;
-//     for (let obj of arr) {
-//         if(obj.id > max) max = obj.id;
-//     }
-//     return max + 1;
-// }
-
-
-
-/*
-this function sort a list by the task's date-time
-*/
-// function sortListByDate(list) {
-//     return list.sort((a, b) => {
-//         if(Date.parse(a.date) > Date.parse(b.date)) return -1;
-//     });
-// }
