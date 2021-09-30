@@ -101,7 +101,6 @@ function addEventsToTasks(taskElem) {
     taskElem.addEventListener("dragstart", () => {
         taskElem.classList.add("dragging");
         document.getElementById("delete-drag").classList.add("red-bg-color");
-        
     });
     
     taskElem.addEventListener("dragend", (e) => {
@@ -399,7 +398,7 @@ function dragendEventHandler(e) {
     }
 
     if(e.target.closest("ul") === ulList) {
-        const liIndex = Array.prototype.indexOf.call(ulList.querySelectorAll("li"), e.target);
+        const liIndex = getElementIndex(e.target);
         if(liIndex < index) {
             index--;
         }
@@ -414,7 +413,7 @@ function dragoverTaskEventHandler(e) {
     const y = e.clientY;
     const dragIndex = getDragIndexTaskDOM(y, listBounds);
     const liTasks = ulList.querySelectorAll("li");
-    const taskIndex = Array.prototype.indexOf.call(liTasks, e.target);
+    const taskIndex = getElementIndex(e.target);
 
     liTasks.forEach((li) => {
         li.classList.remove("dragover-border-bottom");
@@ -618,3 +617,8 @@ function loaderDisplay() {
     }
 }
 
+function getElementIndex(element) {
+    const parent = element.parentElement;
+    const childrenType = parent.querySelectorAll(element.tagName);
+    return Array.prototype.indexOf.call(childrenType, element);
+}
