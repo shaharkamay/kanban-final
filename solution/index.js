@@ -101,13 +101,16 @@ function addEventsToTasks(taskElem) {
     taskElem.addEventListener("dragstart", () => {
         taskElem.classList.add("dragging");
         document.getElementById("delete-drag").classList.add("red-bg-color");
+        
     });
-
+    
     taskElem.addEventListener("dragend", (e) => {
         taskElem.classList.remove("dragging");
         document.getElementById("delete-drag").classList.remove("red-bg-color");
         dragendEventHandler(e);
     });
+    taskElem.addEventListener("dragover", dragoverTaskEventHandler);
+    taskElem.addEventListener("dragleave", dragleaveTaskEventHandler);
 }
 
 function filterLists(query) {
@@ -394,7 +397,39 @@ function dragendEventHandler(e) {
         const y = e.clientY;
         index = getDragIndexTaskDOM(y, listBounds);
     }
+
+    if(e.target.closest("ul") === ulList) {
+        const liIndex = Array.prototype.indexOf.call(ulList.querySelectorAll("li"), e.target);
+        if(liIndex < index) {
+            index--;
+        }
+    } 
     moveTask(task, previousListType, newListType, index);
+}
+
+//Handles the dragover/dragleave event of a task and add a class to indicate what position to insert in
+function dragoverTaskEventHandler(e) {
+    const ulList = e.target.closest("ul");
+    const listBounds = ulList.getBoundingClientRect();
+    const y = e.clientY;
+    const dragIndex = getDragIndexTaskDOM(y, listBounds);
+    const liTasks = ulList.querySelectorAll("li");
+    const taskIndex = Array.prototype.indexOf.call(liTasks, e.target);
+
+    liTasks.forEach((li) => {
+        li.classList.remove("dragover-border-bottom");
+        li.classList.remove("dragover-border-top");
+    });
+
+    if(dragIndex !== liTasks.length) liTasks[dragIndex].classList.add("dragover-border-top");
+    else liTasks[taskIndex].classList.add("dragover-border-bottom");
+}
+function dragleaveTaskEventHandler(e) {
+    const liTasks = e.target.closest("ul").querySelectorAll("li");
+    liTasks.forEach((li) => {
+        li.classList.remove("dragover-border-bottom");
+        li.classList.remove("dragover-border-top");
+    });
 }
 
 //Handles the mouseover event and displays a div with info of the task

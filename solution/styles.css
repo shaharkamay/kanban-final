@@ -281,3 +281,10 @@ footer .copyright {
 .text-cursor {
     cursor: text;
 }
+
+.dragover-border-bottom {
+    border-bottom: 1px solid black;
+}
+.dragover-border-top {
+    border-top: 1px solid black;
+}
