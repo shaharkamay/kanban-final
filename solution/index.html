@@ -4,10 +4,76 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="../images/icon.png" />
+
     <script src="./index.js" defer></script>
     <link rel="stylesheet" href="./styles.css" />
     <title>Tasks manager</title>
 </head>
 <body>
+    <div class="info-div display-none"></div>
+    <header>
+        <div>
+            <div>
+                <h1 id="page-title">Tasks manager</h1>
+            </div>
+            <div id="search-section">
+                <input id="search" type="search" placeholder="🔎︎ Search...">
+            </div>
+            <div class="select">
+                <label id="themeIcon"></label>
+                <select class="select__input" id="selTheme">
+                    <option value="auto">Auto</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+        </div>
+    </header>
+    <main>
+        <section id="api-interaction-section" class="api-interaction">
+            <div>
+                <div class="save-load">
+                    <button id="save-btn">Save</button>
+                    <button id="load-btn">Load</button>
+                </div>
+                <div>
+                    <p id="delete-drag">🗑 <br>Drag to Delete</p>
+                </div>
+            </div>
+        </section>
+        <section id="lists" class="lists-section">
+            <section id="to-do-section" data-list-type="todo">
+                <h2>To Do List</h2>
+                <ul class="to-do-tasks"></ul>
+                <div class="add-task">
+                    <input id="add-to-do-task" type="text" placeholder="Insert task">
+                    <input id="add-to-do-reminder" type="text" placeholder="Add reminder">
+                    <button id="submit-add-to-do" type="submit">Add</button>
+                </div>
+            </section>
+            <section id="in-progress-section" data-list-type="in-progress">
+                <h2>In Progress List</h2>
+                <ul class="in-progress-tasks"></ul>
+                <div class="add-task">
+                    <input id="add-in-progress-task" type="text" placeholder="Insert task">
+                    <input id="add-in-progress-reminder" type="text" placeholder="Add reminder">
+                    <button id="submit-add-in-progress" type="submit">Add</button>
+                </div>
+            </section>
+            <section id="done-section" data-list-type="done">
+                <h2>Done List</h2>
+                <ul class="done-tasks"></ul>
+                <div class="add-task">
+                    <input id="add-done-task" type="text" placeholder="Insert task">
+                    <input id="add-done-reminder" type="text" placeholder="Add reminder">
+                    <button id="submit-add-done" type="submit">Add</button>
+                </div>
+            </section>
+        </section>
+    </main>
+    <footer>
+        <p class="copyright">Copyright 2021 Shahar Kamay</p>
+    </footer>
 </body>
 </html>
