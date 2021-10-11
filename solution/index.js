@@ -51,8 +51,13 @@ Page structure
     generateLists();
 })();
 
+
+/*
+DOM functions
+*/
+
+//light/dark theme
 function indicateTheme() {
-    //light/dark theme
     document.addEventListener("DOMContentLoaded", () => {
         const savedTheme = localStorage.getItem("theme") || "auto";
         applyTheme(savedTheme);
@@ -66,9 +71,12 @@ function indicateTheme() {
     });
 }
 
-/*
-DOM functions
-*/
+//Light/Dark theme mode
+function applyTheme(theme) {
+    document.body.classList.remove("theme-auto", "theme-light", "theme-dark");
+    document.body.classList.add(`theme-${theme}`);
+}
+
 //Displays the tasks lists to DOM
 function generateLists() {
     const listsSection = document.getElementById("lists");
@@ -83,11 +91,6 @@ function generateLists() {
             list.append(li, span);
         }
     }
-}
-
-function getTasksList(listType, item = "tasksObjects") {
-    const allObjectsTasks = JSON.parse(localStorage.getItem(item));
-    return allObjectsTasks[listType];
 }
 
 function createTaskElement(task = {}) {
@@ -115,19 +118,6 @@ function createInfoElement() {
     return span;
 }
 
-//Handles the dragstart of a task element
-function dragstartTaskEventHandler(e) {
-    e.target.classList.add("dragging");
-    document.getElementById("delete-drag").classList.add("red-bg-color");
-}
-
-//Handles the dragend of a task element
-function dragendTaskEventHandler(e) {
-    e.target.classList.remove("dragging");
-    document.getElementById("delete-drag").classList.remove("red-bg-color");
-    dragendEventHandler(e);
-}
-
 //Takes an object that has keys=types and its values=functions and sets the event listener in the element
 function addEventsToElement(elem, eventListenerObj) {
     for(const type in eventListenerObj) {
@@ -145,9 +135,11 @@ function filterLists(query) {
         else elementsDisplay([liTask, infoSpan], "none");
     }
 }
+
 function searchByQuery(str, query) {
     return (str.search(new RegExp(query.replace(/\s+/, '|'))) !== -1); 
 }
+
 function elementsDisplay(elements, display = '') {
     for(const elem of elements) {
         elem.style.display = display;
@@ -191,12 +183,6 @@ function getDragIndexTaskDOM(y, listBounds, taskHeight = 36) {
 Event handlers
 */
 
-//Light/Dark theme mode
-function applyTheme(theme) {
-    document.body.classList.remove("theme-auto", "theme-light", "theme-dark");
-    document.body.classList.add(`theme-${theme}`);
-}
-
 //Handles the add task event
 function clickAddTaskEventHandler(e) {
     if(!e.target.classList.contains("add-task__input") && !e.target.classList.contains("add-task__button")) return;
@@ -225,18 +211,18 @@ function setReminderTimeout(date, reminder, func) {
     setTimeout(func, reminderInMilliseconds);
 }
 
-function taskConstructor(task, reminder, date = new Date().toLocaleString()) {
-    return {task, date, reminder};
+//Handles the dragstart of a task element
+function dragstartTaskEventHandler(e) {
+    e.target.classList.add("dragging");
+    document.getElementById("delete-drag").classList.add("red-bg-color");
 }
 
-function isVarFalsyAlert(variable, alertMessage = (() => window.alert("Invalid!"))) {
-    if(variable) {
-        return false;
-    }
-    alertMessage();
-    return true;
+//Handles the dragend of a task element
+function dragendTaskEventHandler(e) {
+    e.target.classList.remove("dragging");
+    document.getElementById("delete-drag").classList.remove("red-bg-color");
+    dragendEventHandler(e);
 }
-
 
 //Handles the task edit
 function editTaskEventHandler(e) {
@@ -246,13 +232,6 @@ function editTaskEventHandler(e) {
     toggleEditTaskProperties(liTask, e);
 
     if(e.key === "Enter") liTask.blur(); // it executes the blurEventHandler which updates the task
-}
-
-function updateEditedTask(liTask) {
-    const listType = liTask.closest(".list-section").dataset.listType;
-    const newTask = taskConstructor(liTask.textContent, liTask.dataset.reminder);
-    const oldTask = taskConstructor(liTask.dataset.task, liTask.dataset.date, liTask.dataset.reminder);
-    updateTask(newTask, oldTask, listType);
 }
 
 function toggleEditTaskProperties(liTask, e = {type: null}) {
@@ -270,6 +249,13 @@ function blurEventHandler(e) {
         updateEditedTask(liTask);
         generateLists();
     }
+}
+
+function updateEditedTask(liTask) {
+    const listType = liTask.closest(".list-section").dataset.listType;
+    const newTask = taskConstructor(liTask.textContent, liTask.dataset.reminder);
+    const oldTask = taskConstructor(liTask.dataset.task, liTask.dataset.date, liTask.dataset.reminder);
+    updateTask(newTask, oldTask, listType);
 }
 
 //Handles the task movements between lists
@@ -311,15 +297,17 @@ function searchEventHandler(e) {
 
 //Handles the save and load buttons click and save data to the API or load data from the API
 async function clickEventHandlerApi(e) {
+    toggleLoader();
     if(e.target.id === "save-btn") {
         //Save to api
         const tasksObjects = JSON.parse(localStorage.getItem("tasksObjects"));
-        saveTasksToApi(tasksObjects);
+        await saveTasksToApi(tasksObjects);
     } else if(e.target.id === "load-btn") {
         //Load from api
         await loadTasksFromApi();
         generateLists();
     }
+    toggleLoader();
 }
 
 //Handles the dragend event of a task and deletes/moves the task
@@ -339,18 +327,6 @@ function dragendEventHandler(e) {
     const index = indicateTaskDragIndex(ulList, e);
     
     moveTask(task, previousListType, newListType, index);
-}
-
-function indicateTaskDragIndex(ulList, e) {
-    const listBounds = ulList.getBoundingClientRect();
-    const y = e.clientY;
-    let index = getDragIndexTaskDOM(y, listBounds, e.target.offsetHeight);
-
-    if(e.target.closest("ul") === ulList) {
-        const liIndex = getElementIndex(e.target);
-        if(liIndex < index) index--;
-    } 
-    return index;
 }
 
 function deleteTaskHandler(e) {
@@ -416,12 +392,6 @@ function mouseoutInfoEventHandler(e) {
 /*
 Local Storage functions (task is an object)
 */
-
-function getTaskByName(taskName, listType) {
-    const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
-    const i = allObjectsTasks[listType].findIndex(x => x.task === taskName);
-    return allObjectsTasks[listType][i];
-}
 
 function addTask(task, listType) {
     const allTasksObj = JSON.parse(localStorage.getItem("tasks"));
@@ -510,6 +480,19 @@ function spliceTasks(task, startIndex, listType, deleteCount = 0) {
     localStorage.setItem("tasksObjects", JSON.stringify(allObjectsTasks));
 }
 
+function getTaskByName(taskName, listType) {
+    const allObjectsTasks = JSON.parse(localStorage.getItem("tasksObjects"));
+    const i = allObjectsTasks[listType].findIndex(x => x.task === taskName);
+    return allObjectsTasks[listType][i];
+}
+
+function getTasksList(listType, item = "tasksObjects") {
+    const allObjectsTasks = JSON.parse(localStorage.getItem(item));
+    return allObjectsTasks[listType];
+}
+
+
+
 
 /*
 API functions
@@ -527,18 +510,12 @@ async function apiRequest(method, tasksObjects = null) {
 }
 
 async function saveTasksToApi(tasksObjects) {
-    toggleLoader();
-
     const response = await apiRequest("PUT", tasksObjects);
 
     if(!response.ok) alert(`error status! ${response.status}`);
-
-    toggleLoader();
 }
 
 async function loadTasksFromApi() {
-    toggleLoader();
-
     const response = await apiRequest("GET");
 
     if(!response.ok) alert(`status error! ${response.status}`);
@@ -546,9 +523,7 @@ async function loadTasksFromApi() {
     const data = await response.json();
     const tasks = data.tasks;
 
-    replaceAllTasks(tasks);
-    
-    toggleLoader();
+    replaceAllTasks(tasks);    
 }
 
 
@@ -571,4 +546,33 @@ function getElementIndex(element) {
     const parent = element.parentElement;
     const childrenType = parent.querySelectorAll(element.tagName);
     return Array.prototype.indexOf.call(childrenType, element);
+}
+
+function taskConstructor(task, reminder, date = new Date().toLocaleString()) {
+    return {task, date, reminder};
+}
+
+function indicateTaskDragIndex(ulList, e) {
+    const listBounds = ulList.getBoundingClientRect();
+    const y = e.clientY;
+    let index = getDragIndexTaskDOM(y, listBounds, e.target.offsetHeight);
+
+    if(e.target.closest("ul") === ulList) {
+        const liIndex = getElementIndex(e.target);
+        if(liIndex < index) index--;
+    } 
+    return index;
+}
+
+
+/*
+Validate functions
+*/
+
+function isVarFalsyAlert(variable, alertMessage = (() => window.alert("Invalid!"))) {
+    if(variable) {
+        return false;
+    }
+    alertMessage();
+    return true;
 }
