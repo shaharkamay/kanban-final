@@ -5,6 +5,11 @@ module.exports = {
   mode: 'development', //production
   entry: {
     main: path.resolve(__dirname, 'src/index.js'),
+    dom: path.resolve(__dirname, './scripts/services/dom.js'),
+    handlers: path.resolve(__dirname, './scripts/directives/handlers.js'),
+    storage: path.resolve(__dirname, './scripts/services/storage.js'),
+    api: path.resolve(__dirname, './scripts/network/api.js'),
+    validator: path.resolve(__dirname, './scripts/services/validator.js'),
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -14,7 +19,7 @@ module.exports = {
   },
   devtool: 'inline-source-map',
   devServer: {
-    // contentBase: path.resolve(__dirname, 'dist'),
+    // static: path.resolve(__dirname, 'dist'),
     port: 5001, //default 8080
     open: true,
     hot: true,
