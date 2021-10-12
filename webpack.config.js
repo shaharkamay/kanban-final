@@ -13,7 +13,7 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].[contenthash].js',
+    filename: '[name].js',
     assetModuleFilename: '[name][ext]',
     clean: true,
   },
@@ -29,7 +29,7 @@ module.exports = {
   //loaders
   module: {
     rules: [
-      { test: /\.css$/, use: ['style-loader', 'css-loader'] },
+      { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] },
       { test: /\.(svg|ico|png|webp|jpg|jpeg|gif)$/, type: 'asset/resource' },
     ],
   },

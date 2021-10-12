@@ -1,4 +1,4 @@
-import style from './styles.css'
+import style from './styles.scss'
 import icon from '../images/icon.png'
 import loadingGif from '../images/loading.gif'
 ;('use strict')
